@@ -13,3 +13,4 @@ Gravity Corrections and Reductions
 
    gmeterpy.corrections.atmosphere
    gmeterpy.corrections.polar_motion
+   gmeterpy.corrections.fsol

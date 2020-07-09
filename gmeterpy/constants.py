@@ -4,6 +4,7 @@
 """
 
 from astropy.constants import Constant
+from astropy.constants import c
 
 
 omega = Constant(

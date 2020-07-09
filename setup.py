@@ -10,7 +10,8 @@ import versioneer
 with open('README.rst') as readme_file:
     readme = readme_file.read()
 
-requirements = ['numpy', 'astropy']
+requirements = ['numpy', 'pandas', 'scipy',
+        'statsmodels', 'patsy', 'matplotlib', 'astropy']
 
 setup(
     name='gmeterpy',
@@ -26,9 +27,9 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Topic :: Scientific/Engineering',
     ],
     keywords=['geodesy', 'gravimetry', 'geophysics'],
@@ -39,4 +40,8 @@ setup(
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     zip_safe=False,
+    scripts=['scripts/scx2.py',
+        'scripts/gabl.py',
+        'scripts/loop.py',
+        'scripts/vgfit.py']
 )

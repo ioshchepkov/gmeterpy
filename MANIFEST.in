@@ -10,6 +10,9 @@ recursive-include gmeterpy/*/tests/data *
 # docs
 recursive-include docs *.rst conf.py Makefile make.bat *.jpg *.png *.gif
 
+# exmaples
+recursive-include gmeterpy/*
+
 global-exclude __pycache__ *.py[co]
 
 include versioneer.py

@@ -131,3 +131,31 @@ def polar_motion_correction(xp, yp, lat, lon, radius=6378136 * u.m, delta=1.164)
     delta_g_polar = -delta * omega**2 * radius * np.sin(2 * lat) * delta_lat
 
     return delta_g_polar.to(u.uGal, equivalencies=u.dimensionless_angles())
+
+# Legacy
+
+def polar_motion_corr(xp, yp, lat, lon, a=6378137., omega=7.292115e-5):
+    xp = np.radians(xp / 3600)
+    yp = np.radians(yp / 3600)
+    lat = np.radians(lat)
+    lon = np.radians(lon)
+
+    coords = 2 * np.sin(lat) * np.cos(lat) * (xp * np.cos(lon) - yp * np.sin(lon))
+
+    return -1.164 * 10**8 * omega**2 * a * coords
+
+def get_xp_yp(jd):
+    iers_auto = iers.IERS_Auto.open()
+    xy = iers_auto.pm_xy(np.asarray(jd))
+    x, y = xy[0].value, xy[1].value
+    return x, y
+
+
+# def polar_motion_correction(jd, lat, lon, **kwargs):
+#    iers_auto = iers.IERS_Auto.open()
+#
+#    xy = iers_auto.pm_xy(np.asarray(jd))
+#    x, y = xy[0].value, xy[1].value
+#
+#    return polar_motion_corr(x, y, lat, lon, **kwargs)
+
