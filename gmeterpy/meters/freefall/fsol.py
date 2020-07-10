@@ -89,10 +89,3 @@ def finite_speed_of_light_correction(gravity, initial_velocity,
     fsol = sign * 3 * g0 / const.c * (v0 + g0 * c1)
 
     return fsol
-
-# Legacy
-
-def doppler_shift_corr(g0, v0, t, c=299792458.):
-    """Return the speed of light correction"""
-    g0 = g0 * 1e-08
-    return -(3 / c * g0 * (v0 + 0.5 * g0 * t)) * 1e08

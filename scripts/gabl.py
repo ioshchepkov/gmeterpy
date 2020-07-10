@@ -3,20 +3,20 @@
 import os
 import argparse
 import configparser
-from  scipy.stats import sigmaclip
+from scipy.stats import sigmaclip
 
 from gmeterpy.meters.gabl.core import GABLProject
 from gmeterpy.plotting.absolute import plot_residuals, plot_drops
 from gmeterpy.corrections.tides.prolet import prolet
-from gmeterpy.corrections import get_xp_yp
+from gmeterpy.corrections import get_polar_motion
 from gmeterpy.utils.stats import sigma_clip, wstdev
 
 conf_parser = argparse.ArgumentParser(description='Process GABL data',
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        add_help=False)
+                                      formatter_class=argparse.RawDescriptionHelpFormatter,
+                                      add_help=False)
 
 conf_parser.add_argument("-c", "--conf_file",
-                        help="Specify config file", metavar="FILE")
+                         help="Specify config file", metavar="FILE")
 args, remaining_argv = conf_parser.parse_known_args()
 
 defaults = {
@@ -35,7 +35,7 @@ defaults = {
     "reject_by": 'series',
     "mean_by": 'series',
     "drop_model": 'OLS',
-        }
+}
 
 if args.conf_file:
     config = configparser.ConfigParser()
@@ -43,52 +43,52 @@ if args.conf_file:
     defaults.update(dict(config.items("ProjectParams")))
 
 parser = argparse.ArgumentParser(
-        # Inherit options from config_parser
-        parents=[conf_parser]
-        )
+    # Inherit options from config_parser
+    parents=[conf_parser]
+)
 
 parser.set_defaults(**defaults)
 
-parser.add_argument('path', help='path to data',action='store')
+parser.add_argument('path', help='path to data', action='store')
 
 # Station
 parser.add_argument('--station', type=str,
-        help='human-readable station name')
+                    help='human-readable station name')
 parser.add_argument('--station-id', type=str,
-        help='computer-readable station id')
+                    help='computer-readable station id')
 parser.add_argument('--lat', type=float,
-        help='latitude')
+                    help='latitude')
 parser.add_argument('--lon', type=float,
-        help='longitude')
+                    help='longitude')
 parser.add_argument('--elev', type=float,
-        help='height above sea level')
+                    help='height above sea level')
 parser.add_argument('--timezone', type=float,
-        help='timedelta from UTC in hours')
+                    help='timedelta from UTC in hours')
 parser.add_argument('--baro-factor', type=float,
-        help='barometric admittance factor, default is 0.3')
+                    help='barometric admittance factor, default is 0.3')
 
 # Instrument
 parser.add_argument('--meter-type', type=str,
-        help='type of the gravimeter')
+                    help='type of the gravimeter')
 parser.add_argument('--meter-sn', type=str,
-        help='s/n of the gravimeter')
+                    help='s/n of the gravimeter')
 
 # Corrections
 parser.add_argument('--tide', type=argparse.FileType('r'), required=True)
 
 # Processing
 parser.add_argument('--tdb', type=int,
-        help='truncate drop in the beginning')
+                    help='truncate drop in the beginning')
 parser.add_argument('--tda', type=int,
-        help='truncate drop in the end')
+                    help='truncate drop in the end')
 parser.add_argument('--sigma', type=float,
-        help='rejection level, default is 3.0')
+                    help='rejection level, default is 3.0')
 parser.add_argument('--reject-by', type=str,
-        help='reject drops in series, seances or azimuths, default is in series')
+                    help='reject drops in series, seances or azimuths, default is in series')
 parser.add_argument('--mean-by', type=str,
-        help='find mean value in series, seances or azimuths, default is in series')
+                    help='find mean value in series, seances or azimuths, default is in series')
 parser.add_argument('--drop-model', type=str,
-        help='regression model for drop fitting')
+                    help='regression model for drop fitting')
 
 # Plots
 parser.add_argument('--plot-residuals', action='store_true')
@@ -103,16 +103,16 @@ before = args.tdb
 after = args.tda
 
 config = {
-        'station' : args.station,
-        'sid' : args.station_id,
-        'baro_factor' : args.baro_factor}
+    'station': args.station,
+    'sid': args.station_id,
+    'baro_factor': args.baro_factor}
 
 if args.lat is not None:
-    config.update({'lat' : float(args.lat)})
+    config.update({'lat': float(args.lat)})
 if args.lon is not None:
-    config.update({'lon' : float(args.lon)})
+    config.update({'lon': float(args.lon)})
 if args.elev is not None:
-    config.update({'height' : float(args.elev)})
+    config.update({'height': float(args.elev)})
 
 proj = GABLProject.load(path, add_to_meta=config, timezone=args.timezone)
 
@@ -124,9 +124,10 @@ os.chdir(path)
 proj.set_correction('c_tide', prolet, fname=ftide, which='solid')
 proj.set_correction('c_ocean', prolet, fname=ftide, which='ocean')
 
-xp, yp = get_xp_yp(proj._data.jd)
-proj._data['xp'] = xp
-proj._data['yp'] = yp
+# update polar motion coordinates
+xp, yp = get_polar_motion(proj._data.jd.values)
+proj.add_quantity_column('xp', xp)
+proj.add_quantity_column('yp', yp)
 proj._update_g_result()
 
 if args.reject_by.lower() == 'series':
@@ -160,4 +161,3 @@ if args.plot_residuals:
         os.makedirs('plot')
     for fig_name, fig in proj.plot_residuals(by=by):
         fig.savefig('plot/' + fig_name + '.png')
-

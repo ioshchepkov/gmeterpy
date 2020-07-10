@@ -78,7 +78,7 @@ class Readings:
         return copy.deepcopy(self)
 
     def quantity(self, column, **kwargs):
-        """ Return a `~astropy.units.Quantity` for the given column.
+        """Return a `~astropy.units.Quantity` for the given column.
 
         Parameters
         ----------
@@ -91,6 +91,20 @@ class Readings:
         values = self._data[column].values
         unit = self.units[column]
         return u.Quantity(values, unit)
+
+    def add_quantity_column(self, column, quantity):
+        """Add values and units from `~astropy.units.Quantity`.
+
+        Parameters
+        ----------
+        column : str
+            The column name to store values.
+        quantity : `~astropy.units.Quantity`
+            The column name to store values.
+
+        """
+        self._data[column] = quantity.value
+        self.units[column] = quantity.unit
 
     def mask(self, column, minv, maxv):
 
@@ -118,7 +132,8 @@ class Readings:
             for key in kwargs:
                 if isinstance(kwargs[key],
                               string_types) and hasattr(self.data, kwargs[key]):
-                    kwargs[key] = getattr(self.data, kwargs[key]).copy()
+                    #kwargs[key] = getattr(self.data, kwargs[key]).copy()
+                    kwargs[key] = self.quantity(kwargs[key])
             value = value(**kwargs)
 
         if isinstance(value, (int, float, list, np.ndarray)):

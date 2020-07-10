@@ -8,6 +8,7 @@ import configparser
 from datetime import timedelta, datetime
 import numpy as np
 import pandas as pd
+
 from gmeterpy.meters.freefall.drop import FreeFallDrop
 
 
@@ -24,16 +25,16 @@ def read_binary_drop(fname, dist_ivals=False, full=False, timezone=0):
         data2 = np.frombuffer(ff, dtype=np.dtype('u4'))
 
     xtra, high, mid, low = np.asarray(data.reshape(int(len(data) / 4), 4).T,
-                                      dtype=int)
+            dtype=int)
 
     opt = {'time': datetime(1899, 12, 30) + timedelta(days=opt[0]) -
             timedelta(hours=timezone),
-           'npoints': opt[1],
-           'divider': opt[2],
-           'wavelength': opt[3] * 10**-6,
-           'vac': opt[4],
-           'pres': opt[5],
-           'temp': opt[6]}
+            'npoints': opt[1],
+            'divider': opt[2],
+            'wavelength': opt[3] * 10**-6,
+            'vac': opt[4],
+            'pres': opt[5],
+            'temp': opt[6]}
 
     if not 600 < opt['pres'] < 800:
         del opt['pres']
@@ -41,7 +42,7 @@ def read_binary_drop(fname, dist_ivals=False, full=False, timezone=0):
 
     # norming
     xtra_norm = np.asarray(255 / (xtra.max() - xtra.min()) *
-                           (xtra - xtra.min()), dtype=int)
+            (xtra - xtra.min()), dtype=int)
 
     # take into account that counter is 24 bit size
     shift_idx = np.where(np.ediff1d(low) < 0)[0] + 1
@@ -63,7 +64,7 @@ def read_binary_drop(fname, dist_ivals=False, full=False, timezone=0):
     if dist_ivals or full:
         index = np.arange(intervals.size)
         distance_intervals = opt['divider'] * index * \
-            opt['wavelength'] / 2
+                opt['wavelength'] / 2
 
     if full:
         df = pd.DataFrame({
@@ -91,19 +92,19 @@ def read_seanceini(root):
     params = config['SeanceParams']
 
     df = {
-        'seance_name': params['SeanceName'],
-        'station': params['LocateName'],
-        'meter_height': float(params['GravimeterHeight']),
-        'aero_coeff': float(params['CorrectK']),
-        'xp': float(params['X_Polus']),
-        'yp': float(params['Y_Polus']),
-        'lat': float(params['Latitude']),
-        'lon': float(params['Longitude']),
-        'height': float(params['Altitude']),
-        'pres': float(params['ActualPressure']),
-        'temp': float(params.get('Temperature', np.nan)),
-        'baro_factor': 0.4,
-        'accepted': bool(True)}
+            'seance_name': params['SeanceName'],
+            'station': params['LocateName'],
+            'meter_height': float(params['GravimeterHeight']),
+            'aero_coeff': float(params['CorrectK']),
+            'xp': float(params['X_Polus']),
+            'yp': float(params['Y_Polus']),
+            'lat': float(params['Latitude']),
+            'lon': float(params['Longitude']),
+            'height': float(params['Altitude']),
+            'pres': float(params['ActualPressure']),
+            'temp': float(params.get('Temperature', np.nan)),
+            'baro_factor': 0.4,
+            'accepted': bool(True)}
 
     return df
 
@@ -117,6 +118,7 @@ def load_from_path(path, add_to_meta=None, timezone=0):
     drops = []
     for snc_n, snc_path in enumerate(snc_paths):
         meta = read_seanceini(snc_path)
+        # TODO: add units
         if add_to_meta is not None:
             meta.update(add_to_meta)
         name = seance_name_handler(meta['seance_name'])
@@ -135,8 +137,8 @@ def load_from_path(path, add_to_meta=None, timezone=0):
                     meta['series'] = srs_n
 
                     time, distance, drop_meta = read_binary_drop(
-                        os.path.join(root, f), dist_ivals=True,
-                        timezone=timezone)
+                            os.path.join(root, f), dist_ivals=True,
+                            timezone=timezone)
                     meta.update(drop_meta)
 
                     drop = FreeFallDrop(time, distance, meta=meta)
@@ -145,7 +147,6 @@ def load_from_path(path, add_to_meta=None, timezone=0):
 
     drops_sorted = sorted(drops, key=lambda x: x._meta['time'])
     return drops_sorted
-
 
 def seance_name_handler(name):
     s = name.lower()

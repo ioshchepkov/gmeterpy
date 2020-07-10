@@ -11,6 +11,8 @@ defined.
 """
 
 from astropy.units import *
+from astropy.units import cds
+
 
 # define namespace
 def_unit(['E', 'Eotvos'], represents=1e-9 * s**-2,

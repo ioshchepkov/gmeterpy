@@ -6,10 +6,11 @@ import pandas as pd
 from scipy.stats import sigmaclip, ttest_ind_from_stats, t, f
 from tqdm import tqdm
 
+import gmeterpy.units as u
 from gmeterpy.core.readings import Readings
-from gmeterpy.meters.freefall.fsol import doppler_shift_corr
-from gmeterpy.corrections import atmosphere_pressure_corr
-from gmeterpy.corrections import polar_motion_corr
+from gmeterpy.meters.freefall.fsol import finite_speed_of_light_correction
+from gmeterpy.corrections import atmospheric_pressure_correction
+from gmeterpy.corrections import polar_motion_correction
 from gmeterpy.meters.gabl.parser import load_from_path
 from gmeterpy.plotting.absolute import plot_residuals
 
@@ -29,14 +30,34 @@ _formatters = {
     'rejected': '{:.0f}'.format,
     'date': '{:%d.%m.%Y}'.format}
 
+_units = {
+        'g' : u.uGal,
+        'err' : u.uGal,
+        'v0' : u.m / u.s,
+        'z0' : u.m,
+        'drop_duration' : u.s,
+        'meter_height': u.m,
+        'aero_coeff': u.uGal / (u.cds.mmHg * 10e-6),
+        'vac': u.cds.mmHg * 10e-6,
+        'xp': u.arcsec,
+        'yp': u.arcsec,
+        'lat': u.deg,
+        'lon': u.deg,
+        'height': u.m,
+        'pres': u.cds.mmHg,
+        'temp': u.deg_C,
+        'baro_factor': u.uGal / u.cds.mmHg,
+        'wavelength': u.m,
+        }
 
-_corrections = {'c_polar': (polar_motion_corr, {'xp': 'xp',
+_corrections = {'c_polar': (polar_motion_correction, {'xp': 'xp',
                                                 'yp': 'yp', 'lat': 'lat', 'lon': 'lon'}),
                 'c_vac': (lambda x, y: x * y, {'x': 'aero_coeff', 'y': 'vac'}),
-                'c_atm': (atmosphere_pressure_corr, {'height': 'height', 'p_0':
-                                                     'pres', 'baro_factor': 'baro_factor'}),
-                'c_dop': (doppler_shift_corr, {'g0': 'g', 'v0': 'v0', 't':
-                                               'drop_duration'}),
+                'c_atm': (atmospheric_pressure_correction, {'height': 'height',
+                    'pressure': 'pres', 'barometric_factor': 'baro_factor'}),
+                'c_dop': (finite_speed_of_light_correction, {
+                    'gravity': 'g', 'initial_velocity': 'v0',
+                    'drop_duration': 'drop_duration'}),
                 }
 
 def t_statistics(x, stderr, n, alpha=0.05):
@@ -96,6 +117,9 @@ def group_wmean(group, weighted=True):
 class GABLProject(Readings):
 
     def __init__(self, drops=[], *args, **kwargs):
+
+        if 'units' not in kwargs:
+            kwargs['units'] = _units
 
         super().__init__(*args, **kwargs)
 

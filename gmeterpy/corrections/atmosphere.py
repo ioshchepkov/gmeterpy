@@ -90,16 +90,3 @@ def atmospheric_pressure_correction(height: u.m, pressure: u.Pa,
     delta_p = pressure - normal_pressure(height)
     delta_g_atm = barometric_factor * delta_p
     return delta_g_atm
-
-# Legacy
-
-def normal_pressure_legacy(height, units = 'mmHg'):
-    p_n = 1013.25 * (1 - 0.0065 * height / 288.15) ** 5.2559
-    if units == 'mBar':
-        return p_n
-    elif units == 'mmHg':
-        return p_n * 750.06 * 10**-3
-
-def atmosphere_pressure_corr(height, p_0, baro_factor=0.3):
-    p_n = normal_pressure_legacy(height, units = 'mmHg')
-    return baro_factor * (p_0 - p_n)
