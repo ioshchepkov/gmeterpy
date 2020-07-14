@@ -8,8 +8,8 @@ import numpy as np
 
 import gmeterpy.units as u
 
-from gmeterpy.core.freefall.effective_height import free_fall_effective_measurement_height
-from gmeterpy.core.freefall.effective_height import tod_to_t0_distance
+from gmeterpy.meters.freefall.effective_height import free_fall_effective_measurement_height
+from gmeterpy.meters.freefall.effective_height import tod_to_t0_distance
 
 
 def test_free_fall_effective_measurement_height():

@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 import statsmodels.api as sm
-from gmeterpy.utils.dmatrices import dmatrix_gravity_values
+from gmeterpy.core.dmatrices import dmatrix_gravity_values
 
 class GravityValues:
     def __init__(self, data=None, meta=None):

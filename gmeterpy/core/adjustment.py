@@ -11,9 +11,9 @@ from scipy.stats import chi2
 from gmeterpy.core.relative import RelativeReadings
 from gmeterpy.core.relative import Ties
 from gmeterpy.core.gvalues import GravityValues
+from gmeterpy.core.dmatrices import dmvstack, dmatrix_dummy
 
-from gmeterpy.utils.dmatrices import dmvstack, dmatrix_dummy
-from gmeterpy.utils.stats import rms, tau_outlier_test
+from gmeterpy.stats import rms, tau_outlier_test
 
 
 class Adjustment:

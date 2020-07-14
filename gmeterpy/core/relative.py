@@ -12,8 +12,8 @@ from scipy.cluster.vq import kmeans, whiten, vq
 
 from gmeterpy.core.readings import Readings
 from gmeterpy.core.drift import Drift
-from gmeterpy.utils.dmatrices import dmatrix_relative_gravity_readings
-from gmeterpy.utils.dmatrices import dmatrix_ties
+from gmeterpy.core.dmatrices import (dmatrix_ties,
+        dmatrix_relative_gravity_readings)
 
 
 def closures(df, root=None):

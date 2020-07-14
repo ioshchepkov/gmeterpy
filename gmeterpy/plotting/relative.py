@@ -8,7 +8,7 @@ import matplotlib.pylab as plt
 import matplotlib.dates as dates
 import matplotlib.ticker as ticker
 
-from gmeterpy.utils.stats import rms
+from gmeterpy.stats import rms
 
 
 def autocorrelation_plot(series, ax=None, **kwds):

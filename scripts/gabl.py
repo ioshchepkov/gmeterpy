@@ -3,13 +3,11 @@
 import os
 import argparse
 import configparser
-from scipy.stats import sigmaclip
 
 from gmeterpy.meters.gabl.core import GABLProject
 from gmeterpy.plotting.absolute import plot_residuals, plot_drops
 from gmeterpy.corrections.tides.prolet import prolet
 from gmeterpy.corrections import get_polar_motion
-from gmeterpy.utils.stats import sigma_clip, wstdev
 
 conf_parser = argparse.ArgumentParser(description='Process GABL data',
                                       formatter_class=argparse.RawDescriptionHelpFormatter,
