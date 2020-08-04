@@ -213,7 +213,8 @@ def plot_loop_processing(loop1, loop2):
     #data1 = loop1.data.set_index('time')
     #data2 = loop2.data.set_index('time')
     data1 = loop1.data
-    data2 = loop2.data
+    #data2 = loop2.data
+    data2 = loop2.readings.data
 
     fig = plt.figure(figsize=(10, 10))
 
@@ -251,7 +252,8 @@ def plot_loop_processing(loop1, loop2):
 
     # drift
     fig.add_subplot(6, 1, 5)
-    plot_drift(loop2.drift, ax=fig.gca())
+    #plot_drift(loop2.drift, ax=fig.gca())
+    plot_drift(loop2, ax=fig.gca())
 
     fig.add_subplot(6, 1, 6)
     for i, group in data2.groupby('setup'):

@@ -51,7 +51,7 @@ corrections, common file formats and processing procedures.
 Install
 -------
 
-You will need **Python 3.5 or greater**.
+You will need **Python 3.6 or greater**.
 
 To install ``gMeterPy`` simply use ``pip`` as usual: 
 
