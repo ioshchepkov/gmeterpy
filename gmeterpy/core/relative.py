@@ -8,20 +8,25 @@ import numpy as np
 import pandas as pd
 import networkx as nx
 
+import statsmodels.formula.api as smf
+import statsmodels.api as sm
+
 from scipy.cluster.vq import kmeans, whiten, vq
 
 from gmeterpy.core.readings import Readings
-from gmeterpy.core.drift import Drift
+from gmeterpy.core.adjustment import AdjustmentResults
 from gmeterpy.core.dmatrices import (dmatrix_ties,
         dmatrix_relative_gravity_readings)
 
 
-def closures(df, root=None):
-    """Closures analysis in the network"""
+def _closures(df, root=None):
+    """Closures analysis in the network.
+
+    """
 
     network = nx.from_pandas_edgelist(df, 'from', 'to',
-                                      edge_attr='delta_g',
-                                      create_using=nx.DiGraph())
+            edge_attr='delta_g',
+            create_using=nx.DiGraph())
 
     basis = nx.cycle_basis(network.to_undirected(), root=root)
     out = []
@@ -53,6 +58,10 @@ class RelativeReadings(Readings):
 
         self.setup_id()
 
+        # TODO: auto_loop
+        if 'loop' not in self._data.columns:
+            self._data['loop'] = 1
+
     def stations(self):
         return self.data.name.unique()
 
@@ -69,8 +78,10 @@ class RelativeReadings(Readings):
         return self
 
     def setup_id(self):
+        #TODO: by loop
         idx = np.concatenate(([0], np.where(self.data['sid'][:-1].values !=
-                                            self.data['sid'][1:].values)[0] + 1, [len(self.data)]))
+            self.data['sid'][1:].values)[0] + 1,
+            [len(self.data)]))
 
         rng = [(a, b) for a, b in zip(idx, idx[1:])]
         setup = []
@@ -83,13 +94,16 @@ class RelativeReadings(Readings):
 
         return self
 
+    def auto_loop(self):
+        raise NotImplementedError
+
     @classmethod
     def from_file(self, fname, **kwargs):
         def parser(x): return datetime.datetime.strptime(
-            x, '%Y-%m-%d %H:%M:%S')
+                x, '%Y-%m-%d %H:%M:%S')
 
         df = pd.read_csv(fname, delim_whitespace=True, parse_dates=[
-                         ['date', 'time']], index_col=0, date_parser=parser)
+            ['date', 'time']], index_col=0, date_parser=parser)
         df.index.name = 'time'
 
         return RelativeReadings(data=df)
@@ -100,6 +114,8 @@ class RelativeReadings(Readings):
         super().to_file(*args, **kwargs)
 
     def get_repeated_mask(self):
+        #TODO: return not only mask, but RelativeReadings
+        #TODO: by loop
         data = self._data.copy()
         rep = data.groupby('name').setup.unique().apply(len) > 1
         rep = rep.reset_index()
@@ -107,31 +123,6 @@ class RelativeReadings(Readings):
         data = data.reset_index().merge(rep).set_index('time').sort_index()
         mask = data.in_repeated.values
         return mask
-
-    def truncate(self, by=None, before=0, after=0):
-        # if before is None:
-        #    before = self._proc['truncate_before']
-        # if after is None:
-        #    after = self._proc['truncate_after']
-
-        # TODO: add default by
-
-        data = self._data.reset_index()
-        data = data.groupby(by).apply(lambda x: x.iloc[before:(len(x) -
-                                                               after)]).reset_index(drop=True)
-        self._data = data.set_index('time')
-
-        self._proc['truncate_before'] = before
-        self._proc['truncate_after'] = after
-
-        return self
-
-    def split(self, by=None):
-        splitted = []
-        for n, group in self._data.groupby(by):
-            l = RelativeReadings(group.copy(), meta=self.meta)
-            splitted.append(l)
-        return splitted
 
     def dmatrices(self, w_col=None, **kwargs):
         dm = dmatrix_relative_gravity_readings(self.data.copy(), **kwargs)
@@ -145,47 +136,74 @@ class RelativeReadings(Readings):
 
         return dm, wm, y
 
-    def fit(self, *args, **kwargs):
+    def adjust(self, gravity=True, drift_args={'drift_order':1},
+            sm_model=sm.RLM, sm_model_args={'M':sm.robust.norms.HuberT()},
+            **kwargs):
+        """Least squares adjustment of the relative readings.
 
-        mask = kwargs.pop('mask', False)
-        set_corr = kwargs.pop('set_corr', True)
+        """
 
-        readings = self.copy()
+        # t0 = readings.data.jd.min()
+        # readings._data['dt0'] = readings.data.jd - t0
 
-        if mask:
-            readings._data = readings.data[self.get_repeated_mask()].copy()
+        # design matrix
+        dm, _ , y = self.dmatrices(
+                gravity=gravity,
+                drift_args=drift_args,
+                **kwargs)
 
-        self.drift = Drift(readings, *args, **kwargs)
-        self.res = self.drift.res
-        self.data['dt0'] = self.data.jd - self.drift.t0
+        res = sm_model(y, dm, **sm_model_args).fit()
 
-        #self.meta['proc']['drift_order'] = self.drift.drift_order
+        #readings.meta['proc']['t0'] = t0
+        #readings._meta.update({'proc': {
+        #    'drift_args' : drift_args}})
 
-        self._data['c_drift'] = np.around(self.drift.drift(self.data.dt0), 4)
+        return RelativeReadingsResults(self, res)
 
-        if set_corr:
-            self.set_correction('c_drift', 'c_drift')
 
-        return self
+class RelativeReadingsResults(AdjustmentResults):
+
+    def __init__(self, readings, results):
+
+        super().__init__(readings, results)
+
+        self.readings = self.model
+
+        #self.order = self.readings._meta['proc']['drift_order']
+        #self.scale = scale
+
+        #self.t0 = self.readings.data.jd.min()
+        #self.readings._data['dt0'] = self.readings.data.jd - self.t0
+
+        #self.readings._data['c_drift'] = np.around(
+        #self.drift(self.readings.data.dt0), 4)
+        #self.readings._data['resid'] = self.res.resid.values
+        #self.readings._data['weights'] = self.res.weights.values
+
+    def drift(self):
+        drift_params = self.res.params[
+                self.res.params.index.str.startswith('drift')]
+
+        coefs = np.append(self.res.params[-self.order:][::-1], 0)
+        return -np.poly1d(coefs, variable='t')
 
     def has_ties(self):
-        if len(self.stations()) < 2:
+        if len(self.readings.stations()) < 2:
             return False
         else:
             return True
 
     def ties(self, ref=None, sort=False):
-        stations = self.stations()
+        stations = self.readings.stations()
 
         if not self.has_ties():
             print('Warning: You have only one station. Nothing to tie with')
             return Ties()
 
-        if not hasattr(self, 'res'):
-            raise Exception('You need to fit your measurements first!')
-
-        adjg = pd.DataFrame({'g': self.res.params[stations], 'stdev':
-                             self.res.bse[stations]})
+        adjg = pd.DataFrame({
+            'g': self.res.params[stations],
+            'stdev': self.res.bse[stations]
+            })
         if sort:
             if isinstance(sort, bool):
                 adjg = adjg.sort_index()
@@ -206,27 +224,27 @@ class RelativeReadings(Readings):
         elif isinstance(ref, list):
             from_st, to_st = [p for p in zip(*ref)]
             delta_g = [adjg.loc[p2].g - adjg.loc[p1].g for p1,
-                       p2 in zip(from_st, to_st)]
+                    p2 in zip(from_st, to_st)]
 
         ties = pd.DataFrame({
             'from': from_st,
             'to': to_st,
             'delta_g': delta_g,
-        })
+            })
 
-        ties['date'] = self.data.index.date[0].strftime('%Y-%m-%d')
-        ties['meter_sn'] = self.data.meter_sn.unique()[0]
-        ties['operator'] = self.data.operator.unique()[0]
+        ties['date'] = self.readings.data.index.date[0].strftime('%Y-%m-%d')
+        ties['meter_sn'] = self.readings.data.meter_sn.unique()[0]
+        ties['operator'] = self.readings.data.operator.unique()[0]
 
-        count = self.data.groupby('name').setup.unique()
+        count = self.readings.data.groupby('name').setup.unique()
 
         for index, row in ties.iterrows():
             name1 = row['from']
             name2 = row['to']
 
-            var1 = self.drift.res.bse[name1]**2
-            var2 = self.drift.res.bse[name2]**2
-            covar = self.drift.res.cov_params()[name1][name2]
+            var1 = self.res.bse[name1]**2
+            var2 = self.res.bse[name2]**2
+            covar = self.res.cov_params()[name1][name2]
             stdev = np.sqrt(var1 + var2 - 2 * covar)
 
             ties.loc[index, 'stdev'] = stdev
@@ -234,13 +252,35 @@ class RelativeReadings(Readings):
 
         return Ties(ties)
 
+    def report(self):
+        out = ''
+        meter = self.readings.rgmeters()[0]
+        out += 'Meter: '
+        out += str(meter) + '\n'
+        out += '== Parameters ==\n'
+        out += 'Truncate@start: '
+        out += str(self.readings._proc['truncate_before'])
+        out += '\nTruncate@end: '
+        out += str(self.readings._proc['truncate_after']) + '\n'
+
+        out += self.res.summary2().tables[0].to_string(index=False,
+                header=False)
+
+        out += '\n== Results ==\n'
+        out += self.res.summary2().tables[1].iloc[:, :2].to_string()
+        out += '\n== Covariance matrix ==\n'
+        pd.options.display.float_format = '{:.4E}'.format
+        out += self.res.cov_params().to_string()
+
+        return out
+
 
 class Ties:
 
     def __init__(self, df=None):
 
         self.print_cols = ['from', 'to', 'date',
-                           'meter_sn', 'operator', 'delta_g', 'stdev']
+                'meter_sn', 'operator', 'delta_g', 'stdev']
 
         if df is not None:
             self._data = df
@@ -256,7 +296,7 @@ class Ties:
         data = data.rename(index=str, columns={'from': 'to', 'to': 'from'})
         data['delta_g'] = -data.delta_g
         self._data = self._data.append(data, sort=True)[
-            self.print_cols].sort_values(['from', 'to'])
+                self.print_cols].sort_values(['from', 'to'])
 
     def copy(self):
         return deepcopy(self)
@@ -295,7 +335,7 @@ class Ties:
 
     def stations(self):
         return np.unique(np.append(self.data['from'].values,
-                                   self.data['to'].values))
+            self.data['to'].values))
 
     def rgmeters(self):
         return self.data.meter_sn.unique()
@@ -316,13 +356,13 @@ class Ties:
 
         if by is None:
             df = self.data.groupby(['from', 'to'])
-            out = closures(df.delta_g.mean().reset_index(
+            out = _closures(df.delta_g.mean().reset_index(
                 drop=False), root=root)
         else:
             out = {}
             for i, group in self.data.groupby(by):
                 df = group.groupby(['from', 'to'])
-                cl = closures(df.delta_g.mean().reset_index(
+                cl = _closures(df.delta_g.mean().reset_index(
                     drop=False), root=root)
                 if cl:
                     out[str(i)] = cl

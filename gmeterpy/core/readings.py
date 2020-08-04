@@ -13,7 +13,8 @@ __all__ = ["Readings"]
 
 class Readings:
 
-    def __init__(self, data=None, meta=None, units=None, corrections=None, **kwargs):
+    def __init__(self, data=None, meta=None, units=None, corrections=None,
+            **kwargs):
 
         if data is not None:
             self._data = data
@@ -25,7 +26,7 @@ class Readings:
         else:
             self._meta = meta
 
-        self._corrections = kwargs.pop('corrections', None)
+        self._corrections = corrections
 
         if corrections is None:
             self._corrections = {key: (key, {}) for key in self._data.columns
@@ -107,17 +108,32 @@ class Readings:
         self.units[column] = quantity.unit
 
     def mask(self, column, minv, maxv):
-
         cc = self._data[column]
         c = ((cc <= minv) & (cc >= maxv))
         self._data = self._data.mask(c)
-
         return self
 
     def filter(self, minv, maxv, column='g_result', groupby=None):
         cc = self._data[column]
         c = ((cc >= minv) & (cc <= maxv))
         self._data = self._data[c]
+        return self
+
+    def split(self, *args, **kwargs):
+        splitted = []
+        for n, group in self._data.groupby(*args, **kwargs):
+            group_n = self.__class__(group.copy(), meta=self.meta)
+            splitted.append(group_n)
+        return splitted
+
+    def truncate(self, by=None, before=0, after=0):
+        data = self._data.reset_index()
+        data = data.groupby(by).apply(lambda x: x.iloc[before:(len(x) -
+                                                               after)]).reset_index(drop=True)
+        self._data = data.set_index('time')
+
+        self._proc['truncate_before'] = before
+        self._proc['truncate_after'] = after
 
         return self
 
@@ -190,3 +206,4 @@ class Readings:
         data = data.to_string(index=False, columns=columns)
         with open(fname, 'wt') as f:
             f.write(data + '\n')
+
