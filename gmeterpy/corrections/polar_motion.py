@@ -15,8 +15,8 @@ from gmeterpy.constants import omega
 
 iers.conf.auto_max_age = 10
 iers.conf.auto_download = True
-IERS_A_URL = 'ftp://ftp.iers.org/products/eop/rapid/standard/finals2000A.all'
-iers.conf.iers_auto_url = IERS_A_URL
+#IERS_A_URL = 'ftp://ftp.iers.org/products/eop/rapid/standard/finals2000A.all'
+#iers.conf.iers_auto_url = IERS_A_URL
 iers.conf.remote_timeout = 60
 
 STATUS = {iers.FROM_IERS_B: 'IERS_B',

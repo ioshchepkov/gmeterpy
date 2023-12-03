@@ -2,9 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-from pandas import DataFrame, concat
+from pandas import DataFrame, concat, get_dummies
 from patsy import dmatrix
-from statsmodels.tools.tools import categorical
 from scipy.linalg import block_diag
 
 
@@ -21,7 +20,10 @@ def dmatrix_dummy(data, return_type='dataframe'):
     if len(data) == 1:
         dm, names = [1], {0: data[0]}
     else:
-        dm, names = categorical(data, drop=True, dictnames=True)
+        #dm, names = get_dummies(data, drop=True, dictnames=True)
+        dm = get_dummies(data)
+        #names = {c: i for i, c in enumerate(dm.columns)}
+        names = {key:value for key, value in enumerate(dm.columns)}
 
     return _common_output(dm, names, return_type=return_type)
 
@@ -60,7 +62,8 @@ def dmatrix_calibration(data, by=None,
         mask = data[meter_column].isin(fix_meters)
         dm_data[~mask] = np.nan
 
-    dm = categorical(dm_data, drop=True)
+    #dm = get_dummies(dm_data, drop=True)
+    dm = get_dummies(dm_data)
     dm = (dm*np.tile(data[calibration_column].values.reshape(
         (dm.shape[0], 1)), dm.shape[1]))
 

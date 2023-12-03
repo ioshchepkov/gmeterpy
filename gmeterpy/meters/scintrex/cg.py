@@ -115,14 +115,15 @@ class _ScintrexCGBase(RelativeReadings):
         if use_drift:
             kwargs['corrections']['c_drift'] = ('c_drift', {})
         else:
-            df = df.drop(['c_drift'], 1)
+            df = df.drop(['c_drift'], axis=1)
 
         if use_tide:
             kwargs['corrections']['c_tide'] = ('c_tide', {})
         else:
-            df = df.drop(['c_tide'], 1)
+            df = df.drop(['c_tide'], axis=1)
 
-        df = df.drop(['drift', 'drift_start', 'time', 'date'], 1)
+        df = df.drop(['drift', 'drift_start', 'time', 'date'], axis=1)
+        df['meter_name'] = self.instrument_name
 
         super().__init__(df, **kwargs)
 
@@ -149,7 +150,7 @@ class _ScintrexCGBase(RelativeReadings):
 
 
 class ScintrexCG5(_ScintrexCGBase):
-    instrument_name = 'Scintrex CG-5'
+    instrument_name = 'ScintrexCG-5'
 
     _default_corrections = {
         'c_tide': ('c_tide', {})}
@@ -170,18 +171,18 @@ class ScintrexCG5(_ScintrexCGBase):
         c_tide = df.c_tide.copy()
         c_tide[~df['longman'].values] = 0.0
         df['g'] = df['g'] - c_tide
-        df = df.drop(['longman'], 1)
+        df = df.drop(['longman'], axis=1)
 
         # restore utc
         if 'gmt' in df.columns:
             df.index = df.index + pd.to_timedelta(df['gmt'], unit='hours')
-            df = df.drop(['gmt'], 1)
+            df = df.drop(['gmt'], axis=1)
 
         return df
 
 
 class ScintrexCG6(_ScintrexCGBase):
-    instrument_name = 'Scintrex CG-6'
+    instrument_name = 'ScintrexCG-6'
 
     _default_corrections = {
         'c_tide': ('c_tide', {}),

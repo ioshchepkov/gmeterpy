@@ -29,6 +29,8 @@ def plot_residuals(residuals, time=None, ax=None):
     ax.set_ylabel('Residuals [nm]')
     ax.grid()
 
+    plt.close()
+
     return ax
 
 

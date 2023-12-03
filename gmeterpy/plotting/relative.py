@@ -60,10 +60,10 @@ def plot_error(series, ax=None, **kwds):
     if ax is None:
         fig, ax = plt.subplots()
 
-    ax.vlines(series.index.to_pydatetime(), [0], series.values, linestyle='solid')
+    ax.vlines(series.index.to_pydatetime(), [0], series.values, 'k', linestyle='solid')
     ax.yaxis.set_major_locator(ticker.LinearLocator(5))
     ax.set_ylabel('Error ($\mu$Gal)')
-    ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.0f'))
+    ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.1f'))
     ax.grid()
     ax.set_ylim([0, series.max()])
 
@@ -76,6 +76,7 @@ def plot_temperature(in_temp, out_temp=None, ax=None, **kwads):
 
     lns1 = ax.plot_date(in_temp.index.to_pydatetime(), in_temp.values, 'k.', label='in_temp')
     ax.yaxis.set_major_locator(ticker.LinearLocator(3))
+    ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.2f'))
     ax.set_ylabel('Inside temp. (mK)')
 
     if out_temp is not None:
@@ -136,7 +137,7 @@ def plot_setup(data, ax=None, **kwargs):
 
     for i, group in data.groupby('setup'):
         xm = group.index.mean()
-        yi = c.categories.get_indexer(group.name.unique()) + 1
+        yi = np.squeeze(c.categories.get_indexer(group.name.unique()) + 1)
         xb, xe = group.index[[0, -1]].to_pydatetime()
 
         ax.plot([xb, xe], [yi, yi], 'k', [xb, xe], [yi, yi], 'k|')
@@ -147,7 +148,8 @@ def plot_setup(data, ax=None, **kwargs):
     ax.yaxis.set_major_locator(ticker.FixedLocator(range(1, 7, 1)))
 
     ax.set_ylim([0.5, len(c.categories) + 0.5])
-    ax.set_yticklabels(c.categories)
+    # FIXME
+    #ax.set_yticklabels(c.categories)
 
     return ax
 
@@ -173,15 +175,17 @@ def plot_drift(drift, ax=None):
     #start, end = line.data.sort_index().index[[0, -1]]
     start, end = drift.readings.data.sort_index().index[[0, -1]]
     x = pd.date_range(start=start, end=end, freq='T')
-    y = -drift.drift(x.to_julian_date() - drift.t0)
+    #drift.readings.data.jd[0]
+    y = -drift.drift()(x.to_julian_date() - drift.t0) * 1e3
 
     lns1 = ax.plot(x, y, 'k', label='')
     ax.yaxis.set_major_locator(ticker.LinearLocator(5))
-    ax.set_ylim(np.around([y.min(), y.max()], 3))
-    ax.set_ylabel('Gravity [mGal]')
+    ax.set_ylim([y.min(), y.max()])
+    ax.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.1f'))
+    ax.set_ylabel('Gravity [$\mu$Gal]')
 
     ax2 = ax.twinx()
-    drift.readings.data['resid'] = drift.res.resid
+    drift.readings.data['resid'] = drift.res.resid.values
     for i, group in drift.readings.data.groupby('setup'):
         ax2.plot(group.index.to_pydatetime(), group.resid * 1000, 'k-')
 
@@ -226,7 +230,9 @@ def plot_loop_processing(loop1, loop2):
                    transform=fig.gca().transAxes,
                    fontsize=11)
 
-    fig.gca().text(1.0, 1.005, 'Gravimeter: CG5 #' +
+    meter_name = loop1.data.meter_name.unique()[0]
+    fig.gca().text(1.0, 1.005,
+                   'Gravimeter: ' + meter_name + ' # ' +
                    str(loop1.data.meter_sn.unique()[0]),
                    horizontalalignment='right',
                    verticalalignment='bottom',
@@ -238,12 +244,19 @@ def plot_loop_processing(loop1, loop2):
 
     # error
     fig.add_subplot(6, 1, 2)
-    data1['err'] = data1.stdev / np.sqrt(data1.dur - data1.rej)
-    plot_error(data1.err * 1000, ax=fig.gca())
+
+    if 'stderr' not in data1.columns:
+        data1['stderr'] = data1.stdev / np.sqrt(data1.dur - data1.rej)
+    plot_error(data1.stderr * 1000, ax=fig.gca())
 
     # temperature
     fig.add_subplot(6, 1, 3)
-    plot_temperature(data1.in_temp, data1.out_temp,
+    if 'out_temp' not in data1.columns:
+        out_temp = None
+    else:
+        out_temp = data1.out_temp
+
+    plot_temperature(data1.in_temp, out_temp,
                      ax=fig.gca())
 
     # tilt

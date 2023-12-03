@@ -125,6 +125,8 @@ class RelativeReadings(Readings):
         return mask
 
     def dmatrices(self, w_col=None, **kwargs):
+        #print(self._data.jd[0], self._data.jd[1])
+
         dm = dmatrix_relative_gravity_readings(self.data.copy(), **kwargs)
 
         if w_col is not None:
@@ -143,7 +145,7 @@ class RelativeReadings(Readings):
 
         """
 
-        # t0 = readings.data.jd.min()
+        t0 = self.data.jd.min()
         # readings._data['dt0'] = readings.data.jd - t0
 
         # design matrix
@@ -154,9 +156,8 @@ class RelativeReadings(Readings):
 
         res = sm_model(y, dm, **sm_model_args).fit()
 
-        #readings.meta['proc']['t0'] = t0
-        #readings._meta.update({'proc': {
-        #    'drift_args' : drift_args}})
+        self._proc['t0'] = t0
+        self._proc.update(drift_args)
 
         return RelativeReadingsResults(self, res)
 
@@ -169,10 +170,10 @@ class RelativeReadingsResults(AdjustmentResults):
 
         self.readings = self.model
 
-        #self.order = self.readings._meta['proc']['drift_order']
+        self.order = self.readings._proc['drift_order']
         #self.scale = scale
 
-        #self.t0 = self.readings.data.jd.min()
+        self.t0 = self.readings.data.jd.min()
         #self.readings._data['dt0'] = self.readings.data.jd - self.t0
 
         #self.readings._data['c_drift'] = np.around(
@@ -295,7 +296,7 @@ class Ties:
         self._data.drop(data.index, inplace=True)
         data = data.rename(index=str, columns={'from': 'to', 'to': 'from'})
         data['delta_g'] = -data.delta_g
-        self._data = self._data.append(data, sort=True)[
+        self._data = pd.concat([self._data, data], sort=True)[
                 self.print_cols].sort_values(['from', 'to'])
 
     def copy(self):

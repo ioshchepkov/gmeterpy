@@ -32,6 +32,7 @@ _formatters = {
 
 _units = {
         'g' : u.uGal,
+        'g_result' : u.uGal,
         'err' : u.uGal,
         'v0' : u.m / u.s,
         'z0' : u.m,
@@ -149,14 +150,18 @@ class GABLProject(Readings):
         return data
 
     def proc_drops(self, before=0, after=0, **kwargs):
-        data = pd.DataFrame()
+        data = []
         for nn, drop in tqdm(enumerate(self._drops), total=len(self._drops)):
             drop.truncate(before, after)
             drop = drop.fit(**kwargs)
-            data = data.append(pd.Series({**drop.results, **drop._model._meta}),
-                               ignore_index=True)
+            #data = data.append(pd.Series({**drop.results, **drop._model._meta}),
+            #                   ignore_index=True)
+            #data = pd.concat([data, pd.Series({**drop.results, **drop._model._meta})],
+            #                   axis=1)
+            data.append(pd.Series({**drop.results, **drop._model._meta}))
             self._drops[nn] = drop
 
+        data = pd.DataFrame(data)
         data['accepted'] = data['accepted'].astype(bool)
         if np.any([data.lat.unique().size, data.lon.unique().size,
                    data.height.unique().size]) > 1:
@@ -184,7 +189,7 @@ class GABLProject(Readings):
                 group.g_result.values, low=sigma, high=sigma)
             condition = (group.g_result >= lower) & (group.g_result <= upper)
             group.loc[~condition, 'accepted'] = False
-            _data = _data.append(group, ignore_index=True)
+            _data = pd.concat([_data, group], ignore_index=True)
         self._data = _data.set_index('time', drop=False).sort_index()
 
         accepted = self._data['accepted'].values
@@ -212,7 +217,7 @@ class GABLProject(Readings):
                                     cols].groupby(by)
         series = self._data.loc[self._data.accepted, cols].groupby(by)
 
-        srs_mean = series.mean()
+        srs_mean = series.mean(numeric_only=True)
         srs_mean['time'] = series.apply(lambda x: x.index.min() +
                                         (x.index - x.index.min()).to_series().mean())
         srs_mean['stdev'] = series.g_result.std()
@@ -261,7 +266,7 @@ class GABLProject(Readings):
             h_eff = group.meter_height.mean() - h0 - group.h1.mean()
             group['h0'] = h0
             group['h_eff'] = h_eff
-            data = data.append(group, ignore_index=True)
+            data = pd.concat([data, group], ignore_index=True)
         self._data = data.set_index('time')
 
     def report(self):

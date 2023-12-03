@@ -152,6 +152,9 @@ class Readings:
                     kwargs[key] = self.quantity(kwargs[key])
             value = value(**kwargs)
 
+        if isinstance(value, u.Quantity):
+            value = value.to(u.uGal).value
+
         if isinstance(value, (int, float, list, np.ndarray)):
             self._data[name] = value
         elif isinstance(value, pd.Series):
@@ -175,16 +178,17 @@ class Readings:
             self._data.g_result += self.data[key]
 
     def interpolate_from_ts(self, ts):
-        idx = pd.Series(index=self._data.index)
+        idx = pd.Series(index=self._data.index, dtype=np.float64)
         x = pd.concat([ts, idx])
         val = x.groupby([x.index]).first().sort_index().interpolate(
             method='time')[idx.index]
         return pd.Series(val)
 
     def merge(self, to_merge):
-        data = self.data.reset_index(drop=False)
-        data = data.merge(to_merge).set_index('time').sort_index()
-        self._data = data
+        data = self._data.reset_index(drop=False)
+        data = pd.merge(data, to_merge, left_index=True, right_index=True,
+                        how='left')
+        self._data = data.set_index('time').sort_index()
         return self
 
     def to_file(self, fname, before=[], after=[], **kwargs):

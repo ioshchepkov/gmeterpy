@@ -11,6 +11,7 @@ statsmodels="*"
 patsy="*"
 matplotlib="*"
 astropy = "*"
+networkx = "*"
 
 [dev-packages]
 codecov = "*"

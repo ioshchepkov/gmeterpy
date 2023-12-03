@@ -9,11 +9,11 @@ import matplotlib.pylab as plt
 
 from gmeterpy.core.relative import RelativeReadings
 from gmeterpy.plotting.relative import plot_loop_processing
-from gmeterpy.utils.stats import interpolate
+from gmeterpy.stats import interpolate
 
 from gmeterpy.corrections.tides.tamura import tide
 from gmeterpy.corrections.tides.prolet import prolet
-from gmeterpy.corrections.atmosphere import atmosphere_pressure_corr
+from gmeterpy.corrections.atmosphere import atmospheric_pressure_correction
 
 conf_parser = argparse.ArgumentParser(description='Process relative measurements',
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -62,7 +62,7 @@ parser.add_argument('--tide-model', type=str,
 parser.add_argument('--tide', type=open,
         help='file with tides')
 parser.add_argument('--calibration', type=open,
-        help='file with calibration cofficients')
+        help='file with calibration coefficients')
 parser.add_argument('--pressure', type=open,
         help='file with pressure measurements')
 
@@ -96,8 +96,8 @@ if args.stations is not None:
 else:
     sid = readings.data.sid.values
     name = ['S' + str(x) for x in sid]
-    readings = readings.merge(
-            pd.DataFrame({'sid' : sid, 'name': name}))
+    readings._data['name'] = name
+
 
 # apply gravimeter calibration parameter
 if args.calibration is not None:
@@ -141,7 +141,7 @@ readings.set_correction('c_tide', 'c_tide')
 if args.pressure is not None:
     pres = pd.read_csv(args.pressure, index_col='time', parse_dates=True)
     readings.data['pres'] = interpolate(pres['pres'], readings.data.index)
-    readings.data['c_atm'] = (atmosphere_pressure_corr(readings.data.height,
+    readings.data['c_atm'] = (atmospheric_pressure_correction(readings.data.height,
         readings.data['pres'])/1000).round(4)
     readings.set_correction('c_atm', 'c_atm')
     readings.data.c_atm.plot()
@@ -158,11 +158,13 @@ loop = loop.filter(dur_med, dur_med + 20, column='dur')
 #loop = loop.filter('setup', 8, 17)
 #loop = loop.filter('stdev', -1, 0.1)
 
-adj = loop.fit(mask=False, order=args.drift_order)
+#adj = loop.adjust(mask=False, order=args.drift_order)
 
-adj.to_file('readings' + suffix + '.redu')
+adj = loop.adjust(drift_args={'drift_order' : args.drift_order})
 
-report = adj.drift.report()
+adj.readings.to_file('readings' + suffix + '.redu')
+
+report = adj.report()
 with open('report' + suffix + '.txt', 'w') as f:
     f.write(report)
 

@@ -9,7 +9,7 @@ import os
 from gmeterpy.meters.scintrex import ScintrexCG5, ScintrexCG6
 
 parser = argparse.ArgumentParser(description='Convert Scintrex CG-x file')
-parser.add_argument('infile', metavar='FILE', type=argparse.FileType('rt'),
+parser.add_argument('infile', metavar='INPUT', type=argparse.FileType('rt'),
         help='Input Scintrex CG-x data file')
 parser.add_argument('--meter-type',
         default='cg5', choices=['cg5', 'cg6'],
@@ -37,5 +37,4 @@ for line, data in survey.data.groupby('line'):
 #for i, line in enumerate(lines):
 #    suffix = '_line_' + str(int(line.data.line.unique()[0]))
 #    line.to_file('readings' + suffix + '.txt')
-
 survey.to_file('readings.txt')

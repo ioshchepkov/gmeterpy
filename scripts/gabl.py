@@ -149,11 +149,6 @@ proj._set.proc()
 
 proj.report()
 
-'''
-fig2 = plot_drops(group.g_result.values)
-fig_name2 = '_'.join(str(x) for x in idx)
-fig2.figure.savefig('plot/drops_' + fig_name + '.png')
-'''
 if args.plot_residuals:
     if not os.path.exists('plot'):
         os.makedirs('plot')
