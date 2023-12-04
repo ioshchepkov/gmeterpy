@@ -154,7 +154,7 @@ class RelativeReadings(Readings):
                 drift_args=drift_args,
                 **kwargs)
 
-        res = sm_model(y, dm, **sm_model_args).fit()
+        res = sm_model(y.astype(float), dm.astype(float), **sm_model_args).fit()
 
         self._proc['t0'] = t0
         self._proc.update(drift_args)
