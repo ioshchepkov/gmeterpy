@@ -22,10 +22,10 @@ opt = parser.parse_args()
 data = read_csv(opt.i)
 
 df, res = fit_floating_gravity(data, deg=2)
-a, b = res.params[-2], res.params[-1]
+a, b = res.params.iloc[-2], res.params.iloc[-1]
 
-se_a = res.bse[-2]
-se_b = res.bse[-1]
+se_a = res.bse.iloc[-2]
+se_b = res.bse.iloc[-1]
 covab = res.cov_params()['a']['b']
 df['resid'] = res.resid
 

@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 from string import ascii_lowercase
 from statsmodels.api import WLS
-from statsmodels.tools.tools import categorical
 
 
 def vert_grad_corr(a, b, h1, h2):
@@ -39,7 +38,7 @@ def fit_floating_gravity(data, deg=2, **kwargs):
 
     # design matrix
     exog_1 = np.vander(df.h.values, N=deg+1, increasing=True)[:, 1:]
-    exog_2 = categorical(df.ci.values, drop=True)
+    exog_2 = pd.get_dummies(df.ci.values)
     exog = np.hstack((exog_2, exog_1))
 
     # rename unknowns
