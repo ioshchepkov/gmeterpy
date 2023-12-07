@@ -41,5 +41,7 @@ setup(
     scripts=['scripts/scx2.py',
         'scripts/gabl.py',
         'scripts/loop.py',
-        'scripts/vgfit.py']
+        'scripts/vgfit.py',
+        'scripts/gphone.py',
+             ]
 )

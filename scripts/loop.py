@@ -14,6 +14,8 @@ from gmeterpy.stats import interpolate
 from gmeterpy.corrections.tides.tamura import tide
 from gmeterpy.corrections.tides.prolet import prolet
 from gmeterpy.corrections.atmosphere import atmospheric_pressure_correction
+from gmeterpy.corrections import get_polar_motion
+from gmeterpy.corrections import polar_motion_correction
 
 conf_parser = argparse.ArgumentParser(description='Process relative measurements',
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -137,6 +139,12 @@ if tide_model in ('tamura', 'atlantida', 'custom'):
 
 readings.set_correction('c_tide', 'c_tide')
 
+# update polar motion coordinates
+#xp, yp = get_polar_motion(readings._data.jd.values)
+#readings.add_quantity_column('xp', xp)
+#readings.add_quantity_column('yp', yp)
+#readings._update_g_result()
+
 # pressure correction
 if args.pressure is not None:
     pres = pd.read_csv(args.pressure, index_col='time', parse_dates=True)
@@ -169,7 +177,8 @@ with open('report' + suffix + '.txt', 'w') as f:
     f.write(report)
 
 ties = adj.ties()
-ties.to_file(fname='ties' + suffix + '.txt')
+if not ties._data.empty:
+    ties.to_file(fname='ties' + suffix + '.txt')
 
 plot_loop_processing(readings, adj)
 plt.savefig('plot' + suffix + '.png', dpi=600, format='png')

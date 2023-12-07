@@ -57,6 +57,9 @@ def read_tsf(filename, encoding='utf-8', channels=None):
     df.drop(datetime_columns, axis='columns', inplace=True)
     df.set_index(time, inplace=True)
 
+    blocks['INCREMENT'] = int(blocks['INCREMENT'][0])
+    df['dur'] = blocks['INCREMENT']
+
     if channels is not None:
         df = df[channels]
 
