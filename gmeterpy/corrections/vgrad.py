@@ -1,20 +1,27 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import itertools
 import numpy as np
 import pandas as pd
 from string import ascii_lowercase
 from statsmodels.api import WLS
 
 
-def vert_grad_corr(a, b, h1, h2):
-    return (a + b * (h1 + h2)) * (h2 - h1)
+def polynomial_vgg_correction(h1, h2, p):
+    return p(h2) - p(h1)
 
+def polynomial_vgg_correction_uncertainty(h1, h2, cov_params):
+    #u = abs(h2 - h1) * np.sqrt(cov_params['a']['a'] +
+    #              (h2 + h1) ** 2 * cov_params['b']['b'] +
+    #                           2 * (h2 + h1) * cov_params['a']['b'])
 
-def poly_uncertainty_eval(h1, h2, sa, sb, covab):
-    u = abs(h2 - h1) * np.sqrt(sa**2 + (h2 + h1)
-                               ** 2 * sb**2 + 2 * (h2 + h1) * covab)
-    return u
+    # https://en.wikipedia.org/wiki/Propagation_of_uncertainty
+    a = {coeff:h2**(n + 1) - h1**(n + 1) for n, coeff in
+         enumerate(cov_params.columns)}
+    u = np.sum([a[c1] * a[c2] * cov_params[c1][c2] for c1, c2 in
+                itertools.product(cov_params.columns, repeat=2)], axis=0)
+    return np.sqrt(u)
 
 
 def fit_floating_gravity(data, deg=2, **kwargs):
@@ -98,17 +105,16 @@ def fit_gravity(data, deg=2, **kwargs):
     return results
 
 
-def generate_report(report_file, data, res, gp, gu, station):
+def generate_report(report_file, data, res, gp, station):
     """Generate text report of the fit.
 
     """
 
-    se_a, se_b, covab = gu
     h_control = np.array([0.000, 0.05, 0.130, 0.270,
                           0.700, 0.720, 0.900, 1.000, 1.200, 1.300, 1.4])
     with open(report_file, 'w') as f:
-        print('Results of the second-order polynomial fit of the vertical gravity gradients at '
-              + station + '\n', file=f)
+        f.write('Results of the polynomial fit of the vertical gravity gradients at '
+              + station + '\n\n')
         f.write('Data:\n')
         f.write(5 * '*' + '\n')
         f.write('{}\n\n'.format(data.to_string(index=False, na_rep='---')))
@@ -117,7 +123,8 @@ def generate_report(report_file, data, res, gp, gu, station):
         f.write('{0:2.0f} parameters =\n'.format(len(res.params)))
         f.write('{0:2.0f} degrees of freedom\n\n'.format(res.df_resid))
 
-        f.write('Sum of squared residuals: {}\n\n'.format(res.ssr))
+        if hasattr(res, 'ssr'):
+            f.write('Sum of squared residuals: {}\n\n'.format(res.ssr))
 
         pd.options.display.float_format = '{:.2f}'.format
         f.write(res.summary2(alpha=0.05).tables[1].to_string() + '\n\n')
@@ -130,11 +137,13 @@ def generate_report(report_file, data, res, gp, gu, station):
         f.write(18 * '*' + '\n')
         f.write('{:17}\t{:^}\t\t{:>}\n'.format(
             'Heights', 'Gravity diffs', 'Gradients'))
+        cov_params = res.cov_params().iloc[-gp.order:,-gp.order:]
         for hc in h_control:
             ha = h_control[np.where(h_control > hc)]
             for h1, h2 in zip(np.repeat(hc, len(ha)), ha):
-                dg = gp(h2) - gp(h1)
-                se_dg = poly_uncertainty_eval(h1, h2, se_a, se_b, covab)
+                dg = polynomial_vgg_correction(h1, h2, gp)
+                se_dg = polynomial_vgg_correction_uncertainty(
+                        h1, h2, cov_params)
                 grad = dg / (h2 - h1)
                 se_grad = se_dg / abs(h2 - h1)
                 f.write(('{:.3f} --> {:.3f} m,\t{:6.1f} +/- {:.1f} uGal,' +

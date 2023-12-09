@@ -11,7 +11,8 @@ with open('README.rst') as readme_file:
     readme = readme_file.read()
 
 requirements = ['numpy', 'pandas', 'scipy',
-        'statsmodels', 'patsy', 'matplotlib', 'astropy', 'networkx']
+        'statsmodels', 'patsy', 'matplotlib',
+                'astropy', 'networkx']
 
 setup(
     name='gmeterpy',

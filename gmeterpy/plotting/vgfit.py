@@ -2,7 +2,7 @@
 import itertools
 import numpy as np
 import matplotlib.pylab as plt
-from gmeterpy.corrections.vgrad import poly_uncertainty_eval
+from gmeterpy.corrections.vgrad import polynomial_vgg_correction_uncertainty
 
 def plot_ties(df, gp, errorbar=False, xerr=None, ax=None):
     if ax is None:
@@ -35,25 +35,36 @@ def _plot_common(ax=None):
     return fig
 
 
-def plot_fit(df, gp, gu, station, h_ref=0.710):
+def plot_fit(df, gp, cov_params, station, h_ref=0.710):
+
+    h_min = min(df.h)
+    al = (gp(h_min) - gp(1.0)) / (h_min - 1.0)
+    gpr = lambda x: gp(x) - al*x
+
     # common
     fig = _plot_common()
     ax = fig.gca()
 
     # plot source data
-    plot_ties(df, gp, ax=ax)
+    plot_ties(df, gpr, ax=ax)
 
     # plot curve
     h = np.linspace(0.0001, 1.4, 100)
-    ax.plot(gp(h), h, 'b-', linewidth=2.0)
+    ax.plot(gpr(h), h, 'b-', linewidth=2.0)
 
     # 1-sigma diff with h_ref height
-    h_ref = h_ref
-    u = poly_uncertainty_eval(h, np.ones_like(h) * h_ref, *gu)
-    ci_l = gp(h) - u
-    ci_u = gp(h) + u
+    u = polynomial_vgg_correction_uncertainty(
+            h, np.ones_like(h) * h_ref, cov_params)
+    ci_l = gpr(h) - u
+    ci_u = gpr(h) + u
     ax.plot(ci_l, h, 'b', ci_u, h, 'b', linestyle='dashed')
     ax.fill_betweenx(h, ci_l, ci_u, alpha=0.05, color='0.05')
+
+    title = '{station}'.format(station=station)
+    subtitle = 'degree={degree}, ${sub:.1f}\,\mu$Gal / m substructed, $u_{{k = 1}}$'.format(
+            degree=gp.order, sub=al)
+    fig.suptitle(title, fontsize=14, y=0.95)
+    fig.gca().set_title(subtitle, fontsize=12)
 
     return fig
 
