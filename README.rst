@@ -6,17 +6,9 @@ gMeterPy
         :target: https://pypi.python.org/pypi/gmeterpy
         :alt: Latest version on PyPI
 
-.. image:: https://img.shields.io/travis/opengrav/gmeterpy.svg
-        :target: https://travis-ci.org/opengrav/gmeterpy
-        :alt: TravisCI build status
-
-.. image:: https://codecov.io/gh/opengrav/gmeterpy/branch/master/graph/badge.svg
-        :target: https://codecov.io/gh/opengrav/gmeterpy
-        :alt: Test coverage status
-
-.. image:: https://img.shields.io/codacy/grade/2c08b4ce758f484e8ac0aafddbd6ada7.svg
-        :target: https://www.codacy.com/app/ioshchepkov/gmeterpy
-        :alt: Codacy grade
+.. image:: https://github.com/opengrav/gmeterpy/actions/workflows/ci.yml/badge.svg
+        :target: https://github.com/opengrav/gmeterpy/actions/workflows/ci.yml
+        :alt: GitHub Actions build status
 
 .. image:: https://img.shields.io/pypi/pyversions/gmeterpy.svg
         :alt: Compatible Python versions
@@ -51,7 +43,7 @@ corrections, common file formats and processing procedures.
 Install
 -------
 
-You will need **Python 3.11 or greater**.
+You will need **Python 3.12 or greater**.
 
 To install ``gMeterPy`` simply use ``pip`` as usual: 
 
@@ -85,4 +77,3 @@ License
 This project is licensed under the MIT license. 
 Please see `LICENSE.txt <https://github.com/opengrav/gmeterpy/blob/master/LICENSE.txt>`__ 
 for details.
-

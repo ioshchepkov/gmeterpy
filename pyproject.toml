@@ -1,0 +1,90 @@
+[build-system]
+requires = ["setuptools>=77", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gMeterPy"
+dynamic = ["version"]
+description = "Processing gravity measurements with Python"
+readme = { file = "README.rst", content-type = "text/x-rst" }
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{ name = "Ilya Oshchepkov", email = "ilya.oshchepkov@gmail.com" }]
+keywords = ["geodesy", "gravimetry", "geophysics"]
+classifiers = [
+  "Development Status :: 1 - Planning",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Natural Language :: English",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Scientific/Engineering",
+]
+dependencies = [
+  "astropy",
+  "matplotlib",
+  "networkx",
+  "numpy",
+  "pandas",
+  "patsy",
+  "scipy",
+  "statsmodels",
+  "tqdm",
+]
+
+[project.optional-dependencies]
+test = ["pytest", "pytest-cov"]
+dev = [
+  "build",
+  "check-wheel-contents",
+  "pre-commit",
+  "pytest",
+  "pytest-cov",
+  "ruff",
+  "twine",
+]
+
+[project.scripts]
+gabl = "gmeterpy.cli.gabl:main"
+gphone = "gmeterpy.cli.gphone:main"
+loop = "gmeterpy.cli.loop:main"
+scx2 = "gmeterpy.cli.scx2:main"
+vgfit = "gmeterpy.cli.vgfit:main"
+
+[project.urls]
+Homepage = "https://github.com/opengrav/gmeterpy"
+Documentation = "https://gmeterpy.readthedocs.io/"
+Issues = "https://github.com/opengrav/gmeterpy/issues"
+Source = "https://github.com/opengrav/gmeterpy"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools_scm]
+fallback_version = "0.0.0"
+
+[tool.pytest.ini_options]
+addopts = ["--cov=gmeterpy", "--cov-report=term-missing", "--cov-report=xml"]
+filterwarnings = ["ignore::UserWarning"]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["gmeterpy"]
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+extend-exclude = ["src/gmeterpy/corrections/tides/tamura.py"]
+
+[tool.ruff.lint]
+select = ["B", "E4", "E7", "E9", "F", "I", "RUF", "UP"]
+ignore = ["E731", "E741", "RUF002", "RUF003", "RUF007"]

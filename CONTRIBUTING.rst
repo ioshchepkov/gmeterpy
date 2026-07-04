@@ -7,6 +7,31 @@ Contributing
 Contributions are welcome, and they are greatly appreciated! Every little bit
 helps, and credit will always be given.
 
+Development Setup
+-----------------
+
+gMeterPy requires Python 3.12 or newer. Create a virtual environment and
+install the project in editable mode with its development tools:
+
+.. code:: bash
+
+    python -m venv .venv
+    .venv/bin/python -m pip install -e ".[dev]"
+    .venv/bin/pre-commit install
+
+Before submitting a change, run the same checks used by CI:
+
+.. code:: bash
+
+    .venv/bin/ruff check .
+    .venv/bin/ruff format --check .
+    .venv/bin/pytest
+    .venv/bin/python -m build
+    .venv/bin/twine check --strict dist/*
+    .venv/bin/check-wheel-contents dist/*.whl
+
+Use ``ruff check --fix .`` and ``ruff format .`` to apply automatic fixes.
+
 You can contribute in many ways:
 
 Types of Contributions
@@ -53,4 +78,3 @@ If you are proposing a feature:
 * Keep the scope as narrow as possible, to make it easier to implement.
 * Remember that this is a volunteer-driven project, and that contributions
   are welcome :)
-
